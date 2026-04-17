@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>6-7 Counter</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f5f3;
+      color: #1a1a1a;
+      min-height: 100vh;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 2rem 1rem;
+    }
+
+    #app { width: 100%; max-width: 640px; }
+
+    .screen { display: none; }
+    .screen.active { display: block; }
+
+    h1 { font-size: 24px; font-weight: 600; margin-bottom: 0.5rem; }
+    p { font-size: 15px; color: #555; line-height: 1.6; }
+
+    .card {
+      background: #fff;
+      border: 1px solid #e5e5e5;
+      border-radius: 14px;
+      padding: 1.5rem;
+      margin-bottom: 1rem;
+    }
+
+    label { font-size: 13px; color: #777; display: block; margin-bottom: 6px; }
+
+    input[type=text] {
+      width: 100%;
+      font-size: 16px;
+      padding: 10px 14px;
+      border-radius: 8px;
+      border: 1px solid #ddd;
+      background: #fff;
+      color: #1a1a1a;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    input[type=text]:focus { border-color: #888; }
+
+    button {
+      cursor: pointer;
+      font-size: 15px;
+      font-weight: 500;
+      padding: 11px 24px;
+      border-radius: 8px;
+      border: 1px solid #ddd;
+      background: #fff;
+      color: #1a1a1a;
+      transition: background 0.15s;
+    }
+    button:hover { background: #f0f0ee; }
+    button:disabled { opacity: 0.45; cursor: not-allowed; }
+
+    button.primary {
+      background: #1a1a1a;
+      color: #fff;
+      border-color: #1a1a1a;
+    }
+    button.primary:hover { background: #333; }
+    button.primary:disabled { background: #999; border-color: #999; }
+
+    .gap-sm { height: 12px; }
+    .gap-md { height: 20px; }
+
+    .video-wrap {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 4/3;
+      border-radius: 10px;
+      overflow: hidden;
+      background: #111;
+    }
+    .video-wrap video,
+    .video-wrap canvas {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      object-fit: cover;
+    }
+
+    .hud {
+      position: absolute;
+      top: 12px; left: 0; right: 0;
+      display: flex;
+      justify-content: space-between;
+      padding: 0 14px;
+      z-index: 10;
+    }
+    .hud-box {
+      background: rgba(0,0,0,0.6);
+      color: #fff;
+      border-radius: 10px;
+      padding: 8px 16px;
+      text-align: center;
+      min-width: 72px;
+    }
+    .hud-count { font-size: 36px; font-weight: 600; line-height: 1; }
+    .hud-label { font-size: 11px; opacity: 0.75; margin-top: 2px; }
+
+    @keyframes flash { 0%,100%{opacity:1} 50%{opacity:0.3} }
+    .flash { animation: flash 0.25s ease; }
+
+    .big-count {
+      font-size: 80px;
+      font-weight: 700;
+      text-align: center;
+      line-height: 1;
+      color: #1a1a1a;
+    }
+
+    .lb-title { font-size: 13px; font-weight: 600; color: #999; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 0.75rem; }
+    .lb-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 9px 0;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    .lb-row:last-child { border-bottom: none; }
+    .lb-rank { font-size: 15px; font-weight: 600; color: #aaa; min-width: 28px; }
+    .lb-name { font-size: 15px; color: #1a1a1a; flex: 1; }
+    .lb-score { font-size: 15px; font-weight: 600; color: #1a1a1a; }
+
+    .row { display: flex; gap: 10px; }
+    .row button { flex: 1; }
+
+    #debug-info, #debug-info2 {
+      font-size: 12px;
+      color: #aaa;
+      text-align: center;
+      margin-top: 6px;
+      min-height: 18px;
+    }
+
+    .instructions {
+      display: flex;
+      gap: 12px;
+      margin-top: 1rem;
+    }
+    .instruction-step {
+      flex: 1;
+      background: #f8f8f6;
+      border-radius: 10px;
+      padding: 12px;
+      text-align: center;
+      font-size: 13px;
+      color: #555;
+    }
+    .instruction-icon { font-size: 24px; margin-bottom: 6px; }
+  </style>
+</head>
+<body>
+<div id="app">
+
+  <!-- SCREEN: Name entry -->
+  <div id="screen-name" class="screen active">
+    <div class="card">
+      <h1>6-7 Counter</h1>
+      <p style="margin-bottom:1.25rem;">Stand back so your full upper body is visible. Alternate your hands up and down like a seesaw — as fast as you can in 15 seconds!</p>
+      <div class="instructions">
+        <div class="instruction-step"><div class="instruction-icon">🧍</div>Step back so upper body is in frame</div>
+        <div class="instruction-step"><div class="instruction-icon">⚖️</div>Alternate hands up and down like a scale</div>
+        <div class="instruction-step"><div class="instruction-icon">⏱️</div>15 seconds, go as fast as you can</div>
+      </div>
+      <div class="gap-md"></div>
+      <label for="name-input">Your name</label>
+      <input type="text" id="name-input" placeholder="Enter your name" autocomplete="off" />
+      <div class="gap-sm"></div>
+      <button class="primary" id="start-setup-btn" style="width:100%;">Get ready →</button>
+    </div>
+    <div id="leaderboard-home"></div>
+  </div>
+
+  <!-- SCREEN: Setup / camera preview -->
+  <div id="screen-setup" class="screen">
+    <div class="card">
+      <p style="font-size:13px;color:#999;margin-bottom:0.75rem;">Camera preview — step back so both arms are fully visible</p>
+      <div class="video-wrap">
+        <video id="webcam" autoplay playsinline muted></video>
+        <canvas id="overlay"></canvas>
+      </div>
+      <div id="debug-info">Initializing pose detection...</div>
+      <div class="gap-sm"></div>
+      <p style="font-size:14px;color:#777;text-align:center;">Stand so both arms are visible, then press Start when ready.</p>
+      <div class="gap-sm"></div>
+      <div class="row">
+        <button id="back-btn">← Back</button>
+        <button class="primary" id="go-btn" disabled>Detecting pose...</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCREEN: Running -->
+  <div id="screen-running" class="screen">
+    <div class="card" style="padding:0;overflow:hidden;">
+      <div class="video-wrap" style="border-radius:14px;">
+        <video id="webcam2" autoplay playsinline muted></video>
+        <canvas id="overlay2"></canvas>
+        <div class="hud">
+          <div class="hud-box">
+            <div class="hud-count" id="live-count">0</div>
+            <div class="hud-label">6-7s</div>
+          </div>
+          <div class="hud-box">
+            <div class="hud-count" id="live-timer">15</div>
+            <div class="hud-label">secs</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div id="debug-info2"></div>
+  </div>
+
+  <!-- SCREEN: Result -->
+  <div id="screen-result" class="screen">
+    <div class="card" style="text-align:center;">
+      <p style="font-size:14px;color:#777;margin-bottom:0.5rem;">Score for <strong id="result-name"></strong></p>
+      <div class="big-count" id="final-count">0</div>
+      <p style="font-size:14px;color:#999;margin-top:0.5rem;">6-7s in 15 seconds</p>
+      <div class="gap-md"></div>
+      <div class="row">
+        <button class="primary" id="save-btn">Save to leaderboard</button>
+        <button id="retry-btn">Try again</button>
+      </div>
+    </div>
+    <div id="result-leaderboard"></div>
+  </div>
+
+</div>
+
+<!-- Switched from @mediapipe/hands to @mediapipe/pose:
+     - Designed for full-body, far-back detection
+     - Stable at fast movement speeds
+     - No palm orientation requirement -->
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js"></script>
+<script>
+  // ── State ──────────────────────────────────────────────────────────────────
+  let leaderboard   = [];
+  let currentName   = '';
+  let countVal      = 0;
+  let gameActive    = false;
+  let timerInterval = null;
+  let timeLeft      = 15;
+  let mpPose        = null;
+  let camInstance   = null; // rAF id
+  let poseReady     = false;
+  let activeVideo   = null;
+  let activeCanvas  = null;
+  let activeCtx     = null;
+  let seesawState   = null;
+  let cooldown      = false;
+
+  // ── Exponential moving average smoothing ───────────────────────────────────
+  // Filters out per-frame jitter from fast motion / motion blur.
+  // alpha 0.7 = snappy response for rapid-fire alternations
+  const SMOOTH_ALPHA = 0.7;
+  let smoothL = null;
+  let smoothR = null;
+
+  function smooth(prev, next) {
+    if (prev === null) return next;
+    return prev + SMOOTH_ALPHA * (next - prev);
+  }
+
+  // ── Screens ────────────────────────────────────────────────────────────────
+  const allScreens = ['name','setup','running','result'];
+  function showScreen(name) {
+    allScreens.forEach(s => {
+      document.getElementById('screen-' + s).classList.toggle('active', s === name);
+    });
+  }
+
+  // ── Leaderboard render ─────────────────────────────────────────────────────
+  function renderLeaderboard(containerId) {
+    const el = document.getElementById(containerId);
+    if (!leaderboard.length) { el.innerHTML = ''; return; }
+    const sorted = [...leaderboard].sort((a,b) => b.score - a.score).slice(0,10);
+    const medals = ['🥇','🥈','🥉'];
+    el.innerHTML = `<div class="card">
+      <div class="lb-title">Top 10 leaderboard</div>
+      ${sorted.map((e,i) => `
+        <div class="lb-row">
+          <span class="lb-rank">${i < 3 ? medals[i] : (i+1)}</span>
+          <span class="lb-name">${e.name}</span>
+          <span class="lb-score">${e.score}</span>
+        </div>`).join('')}
+    </div>`;
+  }
+
+  // ── Name screen → Setup ────────────────────────────────────────────────────
+  document.getElementById('start-setup-btn').addEventListener('click', () => {
+    currentName = document.getElementById('name-input').value.trim();
+    if (!currentName) { document.getElementById('name-input').focus(); return; }
+    showScreen('setup');
+    initCamera();
+  });
+
+  document.getElementById('name-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') document.getElementById('start-setup-btn').click();
+  });
+
+  document.getElementById('back-btn').addEventListener('click', () => {
+    stopCamera();
+    showScreen('name');
+  });
+
+  document.getElementById('go-btn').addEventListener('click', () => {
+    if (!poseReady) return;
+    startGame();
+  });
+
+  document.getElementById('save-btn').addEventListener('click', () => {
+    leaderboard.push({ name: currentName, score: countVal });
+    leaderboard.sort((a,b) => b.score - a.score);
+    if (leaderboard.length > 10) leaderboard.length = 10;
+    renderLeaderboard('result-leaderboard');
+    const btn = document.getElementById('save-btn');
+    btn.disabled = true;
+    btn.textContent = 'Saved ✓';
+  });
+
+  document.getElementById('retry-btn').addEventListener('click', () => {
+    stopCamera();
+    showScreen('name');
+    renderLeaderboard('leaderboard-home');
+  });
+
+  // ── MediaPipe Pose result handler ──────────────────────────────────────────
+  function onPoseResults(results) {
+    if (!activeCanvas || !activeCtx) return;
+    activeCtx.clearRect(0, 0, activeCanvas.width, activeCanvas.height);
+
+    const lms = results.poseLandmarks;
+    const debugEl = gameActive
+      ? document.getElementById('debug-info2')
+      : document.getElementById('debug-info');
+
+    if (!lms) {
+      smoothL = null;
+      smoothR = null;
+      if (debugEl) debugEl.textContent = 'No pose detected — make sure upper body is visible';
+      return;
+    }
+
+    // Pose landmark indices used:
+    // 11 = left shoulder,  12 = right shoulder
+    // 13 = left elbow,     14 = right elbow
+    // 15 = left wrist,     16 = right wrist
+    const lWrist    = lms[15];
+    const rWrist    = lms[16];
+    const lElbow    = lms[13];
+    const rElbow    = lms[14];
+    const lShoulder = lms[11];
+    const rShoulder = lms[12];
+
+    // Palm-up orientation (as in a 6-7) rotates the wrist away from camera,
+    // so MediaPipe scores it lower than a palm-forward wrist. Use a relaxed
+    // threshold and fall back to the elbow landmark if the wrist is uncertain.
+    const MIN_VIS       = 0.25;
+    const lWristConf    = lWrist.visibility > MIN_VIS;
+    const rWristConf    = rWrist.visibility > MIN_VIS;
+    const lElbowConf    = lElbow.visibility > MIN_VIS;
+    const rElbowConf    = rElbow.visibility > MIN_VIS;
+    const lVisible      = lElbowConf; // elbow always anchors the arm
+    const rVisible      = rElbowConf;
+    // Use wrist when confident, elbow as fallback for Y tracking
+    const lTrack        = lWristConf ? lWrist : lElbow;
+    const rTrack        = rWristConf ? rWrist : rElbow;
+
+    const W = activeCanvas.width;
+    const H = activeCanvas.height;
+
+    // Draw arm skeleton lines for clear visual feedback
+    function drawLine(a, b, color) {
+      activeCtx.beginPath();
+      activeCtx.moveTo(a.x * W, a.y * H);
+      activeCtx.lineTo(b.x * W, b.y * H);
+      activeCtx.strokeStyle = color;
+      activeCtx.lineWidth = 3;
+      activeCtx.stroke();
+    }
+
+    function drawDot(lm, color, letter) {
+      activeCtx.beginPath();
+      activeCtx.arc(lm.x * W, lm.y * H, 14, 0, 2 * Math.PI);
+      activeCtx.fillStyle = color;
+      activeCtx.fill();
+      activeCtx.font = 'bold 13px sans-serif';
+      activeCtx.fillStyle = '#fff';
+      activeCtx.textAlign = 'center';
+      activeCtx.fillText(letter, lm.x * W, lm.y * H + 5);
+    }
+
+    if (lVisible) {
+      drawLine(lShoulder, lElbow, 'rgba(80,180,255,0.5)');
+      drawLine(lElbow, lWrist,    'rgba(80,180,255,0.5)');
+      drawDot(lWrist, 'rgba(80,180,255,0.85)', 'L');
+    }
+    if (rVisible) {
+      drawLine(rShoulder, rElbow, 'rgba(255,140,60,0.5)');
+      drawLine(rElbow, rWrist,    'rgba(255,140,60,0.5)');
+      drawDot(rWrist, 'rgba(255,140,60,0.85)', 'R');
+    }
+
+    // Smooth tracked Y positions — wrist when confident, elbow as fallback
+    if (lVisible) smoothL = smooth(smoothL, lTrack.y);
+    else smoothL = null;
+
+    if (rVisible) smoothR = smooth(smoothR, rTrack.y);
+    else smoothR = null;
+
+    if (debugEl) {
+      if (smoothL !== null && smoothR !== null)
+        debugEl.textContent = `L: ${smoothL.toFixed(2)} | R: ${smoothR.toFixed(2)}`;
+      else if (!lVisible && !rVisible)
+        debugEl.textContent = 'Arms not detected — step back and raise both arms';
+      else
+        debugEl.textContent = lVisible ? 'Right arm not detected' : 'Left arm not detected';
+    }
+
+    if (!poseReady && smoothL !== null && smoothR !== null) {
+      poseReady = true;
+      const btn = document.getElementById('go-btn');
+      btn.disabled = false;
+      btn.textContent = 'Start! →';
+      if (debugEl) debugEl.textContent = 'Both arms detected — press Start!';
+    }
+
+    if (gameActive && smoothL !== null && smoothR !== null) {
+      detectSeesaw(smoothL, smoothR);
+    }
+  }
+
+  // ── Seesaw detection ───────────────────────────────────────────────────────
+  function detectSeesaw(lY, rY) {
+    if (cooldown) return;
+
+    // 0.04 = ~4% of frame height. At full-body distance this is a clear
+    // wrist tilt without being so tight that noise triggers it.
+    const THRESHOLD = 0.04;
+    const diff = lY - rY; // positive = left wrist is lower on screen
+
+    if (seesawState === null) {
+      if (diff > THRESHOLD)       seesawState = 'left_down';
+      else if (diff < -THRESHOLD) seesawState = 'right_down';
+      return;
+    }
+
+    if (seesawState === 'left_down' && diff < -THRESHOLD) {
+      registerCount();
+      seesawState = 'right_down';
+    } else if (seesawState === 'right_down' && diff > THRESHOLD) {
+      registerCount();
+      seesawState = 'left_down';
+    }
+  }
+
+  function registerCount() {
+    countVal++;
+    document.getElementById('live-count').textContent = countVal;
+    const el = document.getElementById('live-count');
+    el.classList.remove('flash');
+    void el.offsetWidth;
+    el.classList.add('flash');
+    // 50ms cooldown — allows up to ~10 alternations/sec for rapid-fire students
+    cooldown = true;
+    setTimeout(() => { cooldown = false; }, 50);
+  }
+
+  // ── Camera init ────────────────────────────────────────────────────────────
+  async function initCamera() {
+    activeVideo  = document.getElementById('webcam');
+    activeCanvas = document.getElementById('overlay');
+    activeCtx    = activeCanvas.getContext('2d');
+    poseReady    = false;
+    smoothL      = null;
+    smoothR      = null;
+
+    const debugEl = document.getElementById('debug-info');
+    debugEl.textContent = 'Requesting camera permission...';
+
+    let stream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: 'user',
+          width:  { ideal: 640 },
+          height: { ideal: 480 }
+        }
+      });
+    } catch (err) {
+      debugEl.textContent = '❌ Camera access denied. Please allow camera access and reload.';
+      return;
+    }
+
+    activeVideo.srcObject = stream;
+    await activeVideo.play();
+
+    mpPose = new Pose({
+      locateFile: f => `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${f}`
+    });
+    mpPose.setOptions({
+      modelComplexity: 1,
+      smoothLandmarks: true,        // MediaPipe's built-in temporal smoothing
+      enableSegmentation: false,
+      minDetectionConfidence: 0.4,  // Lowered for fast/blurry motion
+      minTrackingConfidence: 0.4
+    });
+    mpPose.onResults(onPoseResults);
+
+    debugEl.textContent = 'Loading pose detection model...';
+
+    async function processFrame() {
+      if (!mpPose) return;
+      const srcVideo = document.getElementById('webcam');
+      activeCanvas.width  = srcVideo.videoWidth  || 640;
+      activeCanvas.height = srcVideo.videoHeight || 480;
+      await mpPose.send({ image: srcVideo });
+      camInstance = requestAnimationFrame(processFrame);
+    }
+    camInstance = requestAnimationFrame(processFrame);
+  }
+
+  // ── Start game ─────────────────────────────────────────────────────────────
+  function startGame() {
+    // Mirror the same stream to webcam2 so the running screen has video,
+    // but keep activeVideo/activeCanvas pointing at the originals so
+    // MediaPipe (which was set up on webcam/overlay) keeps working.
+    const video2  = document.getElementById('webcam2');
+    const canvas2 = document.getElementById('overlay2');
+    video2.srcObject = activeVideo.srcObject;
+    video2.play().catch(() => {});
+    // Redirect drawing to overlay2 so the HUD canvas shows skeleton lines
+    activeCanvas = canvas2;
+    activeCtx    = canvas2.getContext('2d');
+    // activeVideo stays as webcam — mpPose.send() already targets it
+
+    countVal    = 0;
+    timeLeft    = 15;
+    gameActive  = true;
+    seesawState = null;
+    cooldown    = false;
+    smoothL     = null;
+    smoothR     = null;
+
+    document.getElementById('live-count').textContent = '0';
+    document.getElementById('live-timer').textContent = '15';
+    document.getElementById('live-timer').style.color = '';
+    showScreen('running');
+
+    timerInterval = setInterval(() => {
+      timeLeft--;
+      const timerEl = document.getElementById('live-timer');
+      timerEl.textContent = timeLeft;
+      if (timeLeft <= 3) timerEl.style.color = '#ff6b6b';
+      if (timeLeft <= 0) {
+        clearInterval(timerInterval);
+        gameActive = false;
+        endGame();
+      }
+    }, 1000);
+  }
+
+  // ── End game ───────────────────────────────────────────────────────────────
+  function endGame() {
+    document.getElementById('result-name').textContent = currentName;
+    document.getElementById('final-count').textContent = countVal;
+    const saveBtn = document.getElementById('save-btn');
+    saveBtn.disabled = false;
+    saveBtn.textContent = 'Save to leaderboard';
+    renderLeaderboard('result-leaderboard');
+    showScreen('result');
+  }
+
+  // ── Stop camera ────────────────────────────────────────────────────────────
+  function stopCamera() {
+    gameActive = false;
+    if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+    if (camInstance)   { cancelAnimationFrame(camInstance); camInstance = null; }
+    ['webcam','webcam2'].forEach(id => {
+      const v = document.getElementById(id);
+      if (v && v.srcObject) { v.srcObject.getTracks().forEach(t => t.stop()); v.srcObject = null; }
+    });
+    poseReady = false;
+    mpPose    = null;
+    smoothL   = null;
+    smoothR   = null;
+  }
+</script>
+</body>
+</html>
